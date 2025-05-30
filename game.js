@@ -185,7 +185,7 @@ function optionsScreen() {
   fill(0);
   text("A & D Keys", width / 2, height / 2 + 65);
 }
-//I used chatgpt ai to classify this functions
+//I used chatgpt ai to classify this function
 // Gamescreen with core gameplay logics
 function gamePlay() {
   background(bgImage);
