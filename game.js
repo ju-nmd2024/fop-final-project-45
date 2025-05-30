@@ -3,7 +3,7 @@
 //https://editor.p5js.org/p5/sketches/Image:_Load_and_Display_Image
 //https://www.youtube.com/watch?v=pHFtOYU-a20
 //https://codepen.io/lukasfrydek/pen/aQmyXL
-//some of the areas used to do with the help of ai
+//Use the help of chatgpt-ai for the project part
 
 // Doodle Jump Game
 // Game Variables
@@ -22,6 +22,7 @@ function preload() {
   endImage = loadImage("End.png");
   optImage = loadImage("options.png");
 }
+//
 // Player Class to repereset player functions
 class Player {
   constructor() {
@@ -95,7 +96,7 @@ class Platform {
     this.type = type;
     this.isBroken = false;
   }
-  //some of the areas used to do with the help of ai
+  //I used chatgpt ai to classify this function
   // Updates platform position and its behavior
   update() {
     this.y += 1;
@@ -184,7 +185,7 @@ function optionsScreen() {
   fill(0);
   text("A & D Keys", width / 2, height / 2 + 65);
 }
-
+//I used chatgpt ai to classify this functions
 // Gamescreen with core gameplay logics
 function gamePlay() {
   background(bgImage);
@@ -237,7 +238,7 @@ function resultScreen() {
   text("High Score: " + highScore, width / 2, height / 2 + 40);
   text("Press ENTER to Restart", width / 2, height / 2 + 80);
 }
-
+//I used the chagpt to mention this functions
 // Resets the game to start screen and with all the default functions of the game
 function resetGame() {
   player = new Player(); //resets to default player
