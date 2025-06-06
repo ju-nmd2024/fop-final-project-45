@@ -12,6 +12,7 @@ let platforms = [];
 let score = 0;
 let highScore = 0;
 let gameState = "start";
+let gameStarted = false;
 let controls = "arrows"; // Control option for "arrows" or "wasd" keys
 
 //for all images used different pictures from google
@@ -22,23 +23,33 @@ function preload() {
   endImage = loadImage("End.png");
   optImage = loadImage("options.png");
 }
+
 //
 // Player Class to repereset player functions
 class Player {
   constructor() {
     this.x = width / 2;
-    this.y = height - 50;
+    this.y = height - 80;
     this.velocityY = 0;
     this.speed = 5;
-    this.gravity = 0.5;
-    this.jumpStrength = -10;
+    this.gravity = 0.27;
+    this.jumpStrength = -11;
     this.direction = 0;
+
+    // New: Timer-based auto-jump
+    this.jumpCooldown = 1000; // milliseconds between jumps
+    this.lastJumpTime = millis(); // store last jump time
   }
 
   // Updates player's position and handles screen wrapping
   update() {
-    this.velocityY += this.gravity;
-    this.y += this.velocityY;
+    if (!gameStarted) return;
+
+    if (gameStarted) {
+      this.velocityY += this.gravity;
+      this.y += this.velocityY;
+    }
+
     this.x += this.direction * this.speed;
 
     if (this.x < 0) this.x = width;
@@ -95,20 +106,27 @@ class Platform {
     this.height = 10;
     this.type = type;
     this.isBroken = false;
+    this.movingDirection = 1; // For consistent moving platform direction
   }
   //I used chatgpt ai to classify this function
   // Updates platform position and its behavior
   update() {
-    this.y += 1;
-    if (this.y > height) {
-      this.y = 0;
-      this.x = random(width);
-      this.type = random(["normal", "moving", "breaking"]);
-      this.isBroken = false;
-    }
-
+    // Handle moving platforms - move them horizontally
     if (this.type === "moving") {
       this.x += sin(frameCount * 0.05) * 2;
+      // Keep moving platforms within screen bounds
+      if (this.x < 0 || this.x > width - this.width) {
+        this.movingDirection *= -1;
+      }
+    }
+
+    // Handle platform scrolling down
+    this.y += 2.7;
+    if (this.y > height) {
+      this.y = -100; // Reset above screen instead of at 0
+      this.x = random(width - this.width);
+      this.type = random(["normal", "moving", "breaking"]);
+      this.isBroken = false;
     }
   }
 
@@ -131,9 +149,20 @@ class Platform {
 function setup() {
   createCanvas(800, 700);
   player = new Player();
-  for (let i = 0; i < 6; i++) {
+
+  // Generate platforms
+  for (let i = 0; i < 7; i++) {
     platforms.push(new Platform(random(width), i * 100));
   }
+
+  // Place player on top of the lowest platform
+  let lowestPlatform = platforms.reduce((lowest, plat) => {
+    return plat.y > lowest.y ? plat : lowest;
+  }, platforms[0]);
+
+  player.x = lowestPlatform.x + lowestPlatform.width / 2;
+  player.y = lowestPlatform.y - 30; // Sit just on top of the platform
+
   highScore = getItem("highScore") || 0;
 }
 
@@ -192,26 +221,31 @@ function gamePlay() {
   player.update();
   player.display();
 
+  // Update and display all platforms
   for (let plat of platforms) {
-    plat.update();
+    if (gameStarted) {
+      plat.update(); // Only update platforms when game has started
+    }
     plat.display();
 
+    // Check collision with player
     if (
       player.velocityY > 0 &&
-      player.y + 25 <= plat.y + 5 &&
+      player.y + 25 <= plat.y + 10 &&
       player.y + 25 >= plat.y - 5 &&
-      player.x > plat.x &&
-      player.x < plat.x + plat.width
+      player.x > plat.x - 15 &&
+      player.x < plat.x + plat.width + 15
     ) {
-      if (plat.type !== "breaking") {
+      if (plat.type !== "breaking" && !plat.isBroken) {
         player.jump();
         score += 10;
-      } else {
+      } else if (plat.type === "breaking") {
         plat.isBroken = true;
       }
     }
   }
 
+  // Check if player fell off screen
   if (player.y > height) {
     gameState = "gameOver";
     if (score > highScore) {
@@ -220,6 +254,7 @@ function gamePlay() {
     }
   }
 
+  // Display score
   fill(0);
   textSize(17);
   text("Score: " + score, 50, 30);
@@ -241,13 +276,27 @@ function resultScreen() {
 //I used the chagpt to mention this functions
 // Resets the game to start screen and with all the default functions of the game
 function resetGame() {
-  player = new Player(); //resets to default player
+  player = new Player(); // Reset player
   platforms = [];
-  for (let i = 0; i < 6; i++) {
-    platforms.push(new Platform(random(width), i * 100));
+
+  // Add bottom center platform
+  let basePlatform = new Platform(width / 2 - 40, height - 100);
+  platforms.push(basePlatform);
+
+  // Add additional platforms
+  for (let i = 1; i < 15; i++) {
+    let x = random(100, width - 100);
+    let y = height - i * 70;
+    platforms.push(new Platform(x, y));
   }
+
+  // Place player above bottom platform
+  player.x = width / 2;
+  player.y = height - 130;
+
   score = 0;
   gameState = "start";
+  gameStarted = false;
 }
 
 // Mouse click for menu selections
@@ -278,15 +327,15 @@ function keyPressed() {
   if (gameState === "gameOver" && keyCode === 13) {
     resetGame();
   }
+
   if (controls === "arrows" || controls === "a & d") {
-    if (key === " " || keyCode === 32) {
-      player.jump();
-    }
     if (keyCode === 37 || keyCode === 65) {
       player.move(-1);
+      gameStarted = true; // Start game on first move
     }
     if (keyCode === 39 || keyCode === 68) {
       player.move(1);
+      gameStarted = true; // Start game on first move
     }
   }
 }
