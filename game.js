@@ -12,8 +12,10 @@ let platforms = [];
 let score = 0;
 let highScore = 0;
 let gameState = "start";
-let gameStarted = false;
+let gameStarted = false; // idea for this variable inspired by chatgpt
 let controls = "arrows"; // Control option for "arrows" or "wasd" keys
+let scrollPlatforms = false;
+let scrollAmount = 0;
 
 //for all images used different pictures from google
 //https://www.youtube.com/watch?v=rO6M5hj0V-o&t=135s
@@ -24,7 +26,6 @@ function preload() {
   optImage = loadImage("options.png");
 }
 
-//
 // Player Class to repereset player functions
 class Player {
   constructor() {
@@ -36,9 +37,7 @@ class Player {
     this.jumpStrength = -11;
     this.direction = 0;
 
-    // New: Timer-based auto-jump
-    this.jumpCooldown = 1000; // milliseconds between jumps
-    this.lastJumpTime = millis(); // store last jump time
+    //accidentally left experimental code here in last commit
   }
 
   // Updates player's position and handles screen wrapping
@@ -120,13 +119,15 @@ class Platform {
       }
     }
 
-    // Handle platform scrolling down
-    this.y += 2.7;
-    if (this.y > height) {
-      this.y = -100; // Reset above screen instead of at 0
-      this.x = random(width - this.width);
-      this.type = random(["normal", "moving", "breaking"]);
-      this.isBroken = false;
+    // Handle platform scrolling down only when triggered
+    if (scrollPlatforms && scrollAmount > 0) {
+      this.y += 2.7;
+      if (this.y > height) {
+        this.y = -100; // Reset above screen instead of at 0
+        this.x = random(width - this.width);
+        this.type = random(["normal", "moving", "breaking"]);
+        this.isBroken = false;
+      }
     }
   }
 
@@ -223,9 +224,7 @@ function gamePlay() {
 
   // Update and display all platforms
   for (let plat of platforms) {
-    if (gameStarted) {
-      plat.update(); // Only update platforms when game has started
-    }
+    plat.update();
     plat.display();
 
     // Check collision with player
@@ -236,12 +235,25 @@ function gamePlay() {
       player.x > plat.x - 15 &&
       player.x < plat.x + plat.width + 15
     ) {
-      if (plat.type !== "breaking" && !plat.isBroken) {
+      if (!plat.isBroken) {
+        // changed this to make player jump on breaking platform (only one possible collision)
         player.jump();
         score += 10;
-      } else if (plat.type === "breaking") {
-        plat.isBroken = true;
+        scrollPlatforms = true;
+        scrollAmount = 50;
+
+        if (plat.type === "breaking") {
+          plat.isBroken = true;
+        }
       }
+    }
+  }
+
+  // Handle scrolling countdown
+  if (scrollPlatforms && scrollAmount > 0) {
+    scrollAmount--;
+    if (scrollAmount <= 0) {
+      scrollPlatforms = false;
     }
   }
 
@@ -273,7 +285,7 @@ function resultScreen() {
   text("High Score: " + highScore, width / 2, height / 2 + 40);
   text("Press ENTER to Restart", width / 2, height / 2 + 80);
 }
-//I used the chagpt to mention this functions
+//I used the chatgpt to mention this functions
 // Resets the game to start screen and with all the default functions of the game
 function resetGame() {
   player = new Player(); // Reset player
@@ -297,6 +309,8 @@ function resetGame() {
   score = 0;
   gameState = "start";
   gameStarted = false;
+  scrollPlatforms = false; // Reset scrolling state
+  scrollAmount = 0; // Reset scroll amount
 }
 
 // Mouse click for menu selections
